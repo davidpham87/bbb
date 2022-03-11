@@ -12,7 +12,7 @@
 
          build {:depends [ensure-bb-submodule ensure-graalvm]
                 :task (shell {:extra-env EXTRA-ENV}
-                             (str "clj -X:native-image '{:main-ns \"" MAIN-NS "\"} "))}
+                             (str "clojure -X:native-image '{:main-ns \"" MAIN-NS "\"} "))}
 
          native-image {:depends [build]}
 
