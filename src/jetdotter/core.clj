@@ -58,18 +58,6 @@
 (defn convert [s from to]
   (-> s (parse from) (generate to)))
 
-(def cli-opts
-  [["-f" "--from FROM" "Source Format. Only necessary for transit format."
-    :parse-fn keyword]
-   ["-t" "--to TO" (format "Target Format. One of %s."
-                           (str/join ", " (map name data-format)))
-    :default :edn
-    :parse-fn keyword
-    :validate [data-format]]
-   ["-p" "--pretty" "Pretty string output"
-    :default true]
-   ["-h" "--help" "Show this help"]])
-
 (defn -main
   [& args]
   (run-cmd args
@@ -79,13 +67,15 @@
             :opts        [{:as "Source Format. Only necessary for transit format."
                            :option "from"
                            :short "f"
-                           :type :keyword}
+                           :type :keyword
+                           :default :edn}
                           {:as (format "Target Format. One of %s."
                                        (str/join ", " (map name data-format)))
                            :option "to"
                            :short "t"
                            :type :keyword
-                           :spec ::data-format}
+                           :spec ::data-format
+                           :default :yaml}
                           {:as "Pretty string output"
                            :option "pretty"
                            :short "p"
