@@ -1,4 +1,4 @@
-{:tasks {:init (def MAIN-NS "example.core")
+{:tasks {:init (def MAIN-NS "jetdotter.core")
 
          run (do
                (require [(symbol MAIN-NS)])
@@ -85,28 +85,32 @@
  :paths ["src"]
  :deps {borkdude/spartan.spec {:git/url "https://github.com/borkdude/spartan.spec"
                                :sha "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
-        selmer/selmer {:mvn/version "1.12.44"},
-        org.clojure/clojure {:mvn/version "1.11.0-alpha1"},
-        org.clojure/tools.logging {:mvn/version "1.1.0"},
-        org.clojure/tools.cli {:mvn/version "1.0.206"},
-        rewrite-clj/rewrite-clj {:mvn/version "1.0.699-alpha"},
-        hiccup/hiccup {:mvn/version "2.0.0-alpha2"},
-        org.clojure/data.xml {:mvn/version "0.2.0-alpha6"},
-        org.clojure/data.csv {:mvn/version "1.0.0"},
-        com.taoensso/timbre {:mvn/version "5.1.2"},
-        com.cognitect/transit-clj {:mvn/version "1.0.324"},
+        org.babashka/spec.alpha {:git/url  "https://github.com/babashka/spec.alpha"
+                                 :sha "1a841c4cc1d4f6dab7505a98ed2d532dd9d56b78"}
+
         babashka/babashka.curl {:mvn/version "0.0.3"},
-        clj-commons/clj-yaml {:mvn/version "0.7.107"},
-        cheshire/cheshire {:mvn/version "5.10.1"},
-        org.clojure/core.match {:mvn/version "1.0.0"},
-        org.clojure/test.check {:mvn/version "1.1.0"},
         babashka/fs {:mvn/version "0.0.5"},
+        cheshire/cheshire {:mvn/version "5.10.1"},
+        clj-commons/clj-yaml {:mvn/version "0.7.107"},
+        com.cognitect/transit-clj {:mvn/version "1.0.324"},
+        com.taoensso/timbre {:mvn/version "5.1.2"},
+        expound/expound {:mvn/version "0.9.0"},
+        hiccup/hiccup {:mvn/version "2.0.0-alpha2"},
         nrepl/bencode {:mvn/version "1.1.0"},
+        org.clojure/clojure {:mvn/version "1.11.0-alpha1"},
         org.clojure/core.async {:mvn/version "1.4.627"},
+        org.clojure/core.match {:mvn/version "1.0.0"},
+        org.clojure/data.csv {:mvn/version "1.0.0"},
+        org.clojure/data.xml {:mvn/version "0.2.0-alpha6"},
+        org.clojure/test.check {:mvn/version "1.1.0"},
+        org.clojure/tools.cli {:mvn/version "1.0.206"},
+        org.clojure/tools.logging {:mvn/version "1.1.0"},
+        rewrite-clj/rewrite-clj {:mvn/version "1.0.699-alpha"},
+        selmer/selmer {:mvn/version "1.12.44"},
+
         ;; added deps
         babashka/babashka {:local/root "vendor/babashka"}
 
         cli-matic/cli-matic {:git/url "https://github.com/l3nz/cli-matic.git"
                              :sha "1aa64070fec1556998b5bbb95d72f3513667ff6a"}
         http-kit/http-kit {:mvn/version "2.5.3"}}}
-
