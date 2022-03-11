@@ -85,9 +85,8 @@
  :paths ["src"]
  :deps {borkdude/spartan.spec {:git/url "https://github.com/borkdude/spartan.spec"
                                :sha "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
-        org.babashka/spec.alpha {:git/url  "https://github.com/babashka/spec.alpha"
+        #_#_org.babashka/spec.alpha {:git/url  "https://github.com/babashka/spec.alpha"
                                  :sha "1a841c4cc1d4f6dab7505a98ed2d532dd9d56b78"}
-
         babashka/babashka.curl {:mvn/version "0.0.3"},
         babashka/fs {:mvn/version "0.0.5"},
         cheshire/cheshire {:mvn/version "5.10.1"},
@@ -108,6 +107,8 @@
         rewrite-clj/rewrite-clj {:mvn/version "1.0.699-alpha"},
         selmer/selmer {:mvn/version "1.12.44"},
 
+        ;; native imagexo
+        com.github.clj-easy/graal-build-time {:mvn/version "0.1.4"}
         ;; added deps
         babashka/babashka {:local/root "vendor/babashka"}
 
