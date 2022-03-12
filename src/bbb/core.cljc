@@ -12,7 +12,7 @@
 (defmacro climatic-hax
   []
   #?(:bb
-     #_(comment "Loading climatic inside bb requires shifting namespaces on the fly a couple times, 
+     #_(comment "Loading climatic inside bb requires shifting namespaces on the fly a couple times,
                 so automate that with this macro")
      (let [orig-ns (ns-name *ns*)]
         ;; hack: bb doesn't have java.text.DateFormat, conversions are done using java.time
@@ -34,10 +34,10 @@
         (require '[cli-matic.core :as climatic-ns])
         climatic-ns/run-cmd)))
 
-;; this must stay near the top of this file since it is doing requires under the hood 
+;; this must stay near the top of this file since it is doing requires under the hood
 (climatic-hax)
 
-;; Since cli-matic only has one entry point (see [1]), we re-export that from bbb.core 
+;; Since cli-matic only has one entry point (see [1]), we re-export that from bbb.core
 ;; after macro hackery has finished
 ;;
 ;; [1]: https://github.com/l3nz/cli-matic/blob/master/src/cli_matic/core.cljc#L3-L10

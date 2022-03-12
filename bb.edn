@@ -10,9 +10,9 @@
                   :task (deref (process (concat ["clj" "-m" MAIN-NS] *command-line-args*)
                                         {:inherit true}))}
 
-         build {:depends [ensure-bb-submodule ensure-graalvm]
-                :task (shell {:extra-env EXTRA-ENV}
-                             (str "clojure -X:native-image '{:main-ns \"" MAIN-NS "\"} "))}
+         build {:depends [ensure-bb-submodule ensure-graalvm
+                          uberjar-clj]
+                :task (shell {:extra-env EXTRA-ENV} (str "sh compile.sh"))}
 
          native-image {:depends [build]}
 
@@ -39,9 +39,10 @@
                                          "uberjar"
                                          (str MAIN-NS ".jar") "-m" MAIN-NS])))
 
-         uberjar-clj (do (deref (process ["clj" "-X:uberjar" ":jar" (str MAIN-NS ".jar")
-                                          ":main-class" MAIN-NS]
-                                         {:inherit true})))
+         uberjar-clj
+         (do (deref (process
+                     ["clojure" "-X:uberjar" ":jar" "app.jar" ":main-class" MAIN-NS]
+                     {:inherit true})))
 
          uberjar (do
                    (println "bbb: Building a JVM Clojure uberjar, use uberjar-bb instead for a babashka uberjar")
@@ -82,7 +83,7 @@
             :exec-fn      hf.depstar/uberjar
             :exec-args    {:jar "uber.jar"
                            :aot true}}}
- :paths ["src"]
+ :paths ["src" "vendor"]
  :deps {borkdude/spartan.spec {:git/url "https://github.com/borkdude/spartan.spec"
                                :sha "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
         #_#_org.babashka/spec.alpha {:git/url  "https://github.com/babashka/spec.alpha"

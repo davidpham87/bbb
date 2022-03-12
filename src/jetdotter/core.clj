@@ -8,12 +8,12 @@
    [clojure.pprint]
    [clojure.string :as str]
    [cognitect.transit :as t]
-   [spartan.spec]
+   [clojure.spec.alpha :as s]
    [expound.alpha :as expound])
   (:import java.io.ByteArrayOutputStream)
   (:gen-class))
 
-(alias 's 'clojure.spec.alpha)
+#_(alias 's 'clojure.spec.alpha)
 (def data-format #{:json :yml :edn :yaml :transit})
 (s/def ::data-format data-format)
 
