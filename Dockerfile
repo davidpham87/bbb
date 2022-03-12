@@ -18,14 +18,11 @@ WORKDIR /usr/src/app
 
 COPY --from=builder /home/circleci/project/app.jar /usr/src/app/app.jar
 
-# COPY resource-config.json .
-COPY reflectconfig.json .
-
-# Compile into a native binary
-COPY _devops/compile.sh .
+COPY reflection-config.json .
+COPY compile.sh .
 
 RUN sh compile.sh
-RUN tar -cjvf app.tar.bz2 app
+RUN tar -cjvf app.tar.bz2 app # Compress the app
 
 FROM gcr.io/distroless/base
 
