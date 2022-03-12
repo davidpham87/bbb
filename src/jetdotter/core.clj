@@ -17,7 +17,6 @@
 (def data-format #{:json :yml :edn :yaml :transit})
 (s/def ::data-format data-format)
 
-
 (defn extension [filename]
   (keyword (last (str/split filename #"\."))))
 
@@ -59,42 +58,46 @@
 (defn convert [s from to]
   (-> s (parse from) (generate to)))
 
+(defn main [args]
+  (fn [opts]
+     (println "Jetdotter called with args: ")
+     (println opts)
+     (doseq [filename (get opts :_arguments)]
+       (let [source-format (or (get-in opts [:from]) (extension filename))
+             target-format (get-in opts [:to])
+             output-filename (convert-extension filename source-format target-format)]
+         (println (format "Converting %s to %s" filename output-filename))
+         (-> (slurp filename)
+             (parse source-format)
+             (generate target-format (get-in opts [:pretty]))
+             (as-> $ (spit output-filename $)))))))
+
+(def cli-opts
+  {:command     "jettdotter"
+   :description "Transform between JSON, EDN, YAML, and Transit"
+   :version     "0.0.1"
+   :opts        [{:as "Source Format. Only necessary for transit format."
+                  :option "from"
+                  :short "f"
+                  :type :keyword
+                  :default :edn}
+                 {:as (format "Target Format. One of %s."
+                              (str/join ", " (map name data-format)))
+                  :option "to"
+                  :short "t"
+                  :type :keyword
+                  :spec ::data-format
+                  :default :yaml}
+                 {:as "Pretty string output"
+                  :option "pretty"
+                  :short "p"
+                  :type :with-flag
+                  :default false}]
+   :runs main})
+
 (defn -main
   [& args]
-  (run-cmd args
-           {:command     "jettdotter"
-            :description "Transform between JSON, EDN, YAML, and Transit"
-            :version     "0.0.1"
-            :opts        [{:as "Source Format. Only necessary for transit format."
-                           :option "from"
-                           :short "f"
-                           :type :keyword
-                           :default :edn}
-                          {:as (format "Target Format. One of %s."
-                                       (str/join ", " (map name data-format)))
-                           :option "to"
-                           :short "t"
-                           :type :keyword
-                           :spec ::data-format
-                           :default :yaml}
-                          {:as "Pretty string output"
-                           :option "pretty"
-                           :short "p"
-                           :type :with-flag
-                           :default false}]
-            :runs
-            (fn [opts]
-              (println "Jetdotter called with args: ")
-              (println opts)
-              (doseq [filename (get opts :_arguments)]
-                (let [source-format (or (get-in opts [:from]) (extension filename))
-                      target-format (get-in opts [:to])
-                      output-filename (convert-extension filename source-format target-format)]
-                  (println (format "Converting %s to %s" filename output-filename))
-                  (-> (slurp filename)
-                      (parse source-format)
-                      (generate target-format (get-in opts [:pretty]))
-                      (as-> $ (spit output-filename $))))))}))
+  (run-cmd args cli-opts))
 
 (comment
   (parse (generate {:a 3} :transit) :transit)
