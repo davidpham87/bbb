@@ -41,7 +41,7 @@
 
          uberjar-clj
          (do (deref (process
-                     ["clojure" "-X:uberjar" ":jar" "app.jar" ":main-class" MAIN-NS]
+                     ["clojure" "-X:native-image:uberjar" ":jar" "app.jar" ":main-class" MAIN-NS]
                      {:inherit true})))
 
          uberjar (do
@@ -67,16 +67,12 @@
                     [babashka.fs :as fs]]}
 
  :aliases {:native-image
-           {:exec-args {:main-ns "example.core"} ;; example.core is a default, is overridden by MAIN-NS
-            :exec-fn   bbb.dep-edn-alias/tools-deps-entrypoint
-            :jvm-opts  ["-Dclojure.compiler.direct-linking=true"
-                       ;; ;; consider uncommenting the below options when building in docker or low mem envs
-                       ;; "-Dnative" "-Dnative-image.docker-build=true" "-Dnative-image.xmx=4g"
-                       "-Dclojure.spec.skip-macros=true"]
-            :extra-deps
-            {clj.native-image/clj.native-image
-             {:git/url "https://github.com/taylorwood/clj.native-image.git"
-              :sha     "4604ae76855e09cdabc0a2ecc5a7de2cc5b775d6"}}}
+           {:extra-deps {org.clojars.huahaiy/datalevin-native {:mvn/version "0.6.0"}}}
+
+           :jvm
+           {:extra-deps {datalevin/datalevin {:mvn/version "0.6.0"}}
+            :jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
+                       "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"]}
 
            :uberjar
            {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
@@ -88,35 +84,34 @@
  :jvm-opts ["--add-opens=java.base/java.nio=ALL-UNNAMED"
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"]
 
- :deps {borkdude/spartan.spec      {:git/url "https://github.com/borkdude/spartan.spec"
-                                    :sha     "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
-        org.babashka/spec.alpha    {:git/url "https://github.com/babashka/spec.alpha"
-                                    :sha     "1a841c4cc1d4f6dab7505a98ed2d532dd9d56b78"}
-        babashka/babashka.curl     {:mvn/version "0.0.3"}
-        babashka/fs                {:mvn/version "0.0.5"}
-        cheshire/cheshire          {:mvn/version "5.10.1"}
-        clj-commons/clj-yaml       {:mvn/version "0.7.107"}
-        com.cognitect/transit-clj  {:mvn/version "1.0.324"}
-        com.taoensso/timbre        {:mvn/version "5.1.2"}
-        datalevin/datalevin-native {:mvn/version "0.6.0"}
-        expound/expound            {:mvn/version "0.9.0"}
-        hiccup/hiccup              {:mvn/version "2.0.0-alpha2"}
-        nrepl/bencode              {:mvn/version "1.1.0"}
-        org.clojure/clojure        {:mvn/version "1.11.0-alpha1"}
-        org.clojure/core.async     {:mvn/version "1.4.627"}
-        org.clojure/core.match     {:mvn/version "1.0.0"}
-        org.clojure/data.csv       {:mvn/version "1.0.0"}
-        org.clojure/data.xml       {:mvn/version "0.2.0-alpha6"}
-        org.clojure/test.check     {:mvn/version "1.1.0"}
-        org.clojure/tools.cli      {:mvn/version "1.0.206"}
-        org.clojure/tools.logging  {:mvn/version "1.1.0"}
-        rewrite-clj/rewrite-clj    {:mvn/version "1.0.699-alpha"}
-        selmer/selmer              {:mvn/version "1.12.44"}
+ :deps {borkdude/spartan.spec     {:git/url "https://github.com/borkdude/spartan.spec"
+                                   :sha     "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
+        ;; org.babashka/spec.alpha   {:git/url "https://github.com/babashka/spec.alpha"
+        ;;                            :sha     "1a841c4cc1d4f6dab7505a98ed2d532dd9d56b78"}
+        babashka/babashka.curl    {:mvn/version "0.0.3"}
+        babashka/fs               {:mvn/version "0.0.5"}
+        cheshire/cheshire         {:mvn/version "5.10.1"}
+        clj-commons/clj-yaml      {:mvn/version "0.7.107"}
+        com.cognitect/transit-clj {:mvn/version "1.0.324"}
+        com.taoensso/timbre       {:mvn/version "5.1.2"}
+        expound/expound           {:mvn/version "0.9.0"}
+        hiccup/hiccup             {:mvn/version "2.0.0-alpha2"}
+        nrepl/bencode             {:mvn/version "1.1.0"}
+        org.clojure/clojure       {:mvn/version "1.11.0-alpha1"}
+        org.clojure/core.async    {:mvn/version "1.4.627"}
+        org.clojure/core.match    {:mvn/version "1.0.0"}
+        org.clojure/data.csv      {:mvn/version "1.0.0"}
+        org.clojure/data.xml      {:mvn/version "0.2.0-alpha6"}
+        org.clojure/test.check    {:mvn/version "1.1.0"}
+        org.clojure/tools.cli     {:mvn/version "1.0.206"}
+        org.clojure/tools.logging {:mvn/version "1.1.0"}
+        rewrite-clj/rewrite-clj   {:mvn/version "1.0.699-alpha"}
+        selmer/selmer             {:mvn/version "1.12.44"}
 
         ;; native imagexo
         com.github.clj-easy/graal-build-time {:mvn/version "0.1.4"}
         ;; added deps
-        babashka/babashka                    {:local/root "vendor/babashka"}
+        #_#_babashka/babashka                    {:local/root "vendor/babashka"}
 
         cli-matic/cli-matic {:git/url "https://github.com/l3nz/cli-matic.git"
                              :sha     "1aa64070fec1556998b5bbb95d72f3513667ff6a"}

@@ -8,12 +8,12 @@
    [clojure.pprint]
    [clojure.string :as str]
    [cognitect.transit :as t]
-   [clojure.spec.alpha :as s]
+   [spartan.spec :as s]
    [expound.alpha :as expound])
   (:import java.io.ByteArrayOutputStream)
   (:gen-class))
 
-#_(alias 's 'clojure.spec.alpha)
+(alias 's 'clojure.spec.alpha)
 (def data-format #{:json :yml :edn :yaml :transit})
 (s/def ::data-format data-format)
 
@@ -28,7 +28,7 @@
                  (= (last (butlast filename-parts)) "transit"))
           2 1)]
     (str
-     (str/join "." (drop-last n-drop filename-parts ))
+     (str/join "." (drop-last n-drop filename-parts))
      "." (name new-ext))))
 
 (defn parse
@@ -59,18 +59,19 @@
   (-> s (parse from) (generate to)))
 
 (defn main [args]
-  (fn [opts]
-     (println "Jetdotter called with args: ")
-     (println opts)
-     (doseq [filename (get opts :_arguments)]
-       (let [source-format (or (get-in opts [:from]) (extension filename))
-             target-format (get-in opts [:to])
-             output-filename (convert-extension filename source-format target-format)]
-         (println (format "Converting %s to %s" filename output-filename))
-         (-> (slurp filename)
-             (parse source-format)
-             (generate target-format (get-in opts [:pretty]))
-             (as-> $ (spit output-filename $)))))))
+  (println "Jetdotter called with args: ")
+  (println opts)
+  (let [conn (db/conn)]
+    (doseq [filename (get opts :_arguments)]
+      (when (db/modified? conn filename)
+        (let [source-format (or (get-in opts [:from]) (extension filename))
+              target-format (get-in opts [:to])
+              output-filename (convert-extension filename source-format target-format)]
+          (println (format "Converting %s to %s" filename output-filename))
+          (-> (slurp filename)
+              (parse source-format)
+              (generate target-format (get-in opts [:pretty]))
+              (as-> $ (spit output-filename $))))))))
 
 (def cli-opts
   {:command     "jettdotter"
