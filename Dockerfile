@@ -1,45 +1,32 @@
-# an example of how you might dockerize a CLI built with bbb.
-# Building this Dockerfile will create a container image that runs
-# the bbb cli in this folder.
+FROM docker.io/cimg/clojure:1.10.3 AS builder
 
-# You can also use this image to build a Linux binary of your CLI from a Mac or
-# Windows machine. (NOTE: this may not work on M1 macs, or may work but result
-# in a Linux aarch64 binary)
-# To do this, run the following commands:
+USER circleci
 
-# docker build . -t bbb
-# docker run --entrypoint /bin/bash bbb -c 'cat /example-cli' > example-cli
-# chmod +x example-cli
+WORKDIR /home/circleci/project
 
-FROM ubuntu:focal as build
+COPY --chown=circleci:circleci deps.edn .
+COPY --chown=circleci:circleci src ./src
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Compile into a uberjar
+RUN clojure -X:depstar
 
-RUN apt-get update && \
-    apt-get install -y build-essential wget clojure git curl
+FROM ghcr.io/graalvm/native-image:latest as native
 
-# install clojure with all tools
-RUN curl -O https://download.clojure.org/install/linux-install-1.10.3.1075.sh && \
-    chmod +x linux-install-1.10.3.1075.sh && \
-    ./linux-install-1.10.3.1075.sh
+USER root
 
-# fixes 'ld: cannot find -lz' error
-RUN apt-get install -y zlib1g-dev
+WORKDIR /usr/src/app
 
-# install babashka
-RUN curl -s https://raw.githubusercontent.com/babashka/babashka/master/install | bash
+COPY --from=builder /home/circleci/project/app.jar /usr/src/app/app.jar
 
-WORKDIR /build
+# COPY resource-config.json .
+COPY reflectconfig.json .
 
-COPY . /build
+# Compile into a native binary
+COPY _devops/compile.sh .
 
-ENV BBB_AUTOGRAAL_NOINTERACTIVE=true
+RUN sh compile.sh
+RUN tar -cjvf app.tar.bz2 app
 
-RUN bb native-image
+FROM gcr.io/distroless/base
 
-FROM ubuntu:focal
-
-COPY --from=build /build/bb /example-cli
-
-ENTRYPOINT /example-cli
-
+COPY --from=native-tar /app.tar.bz2 /
