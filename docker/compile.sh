@@ -26,9 +26,10 @@ native-image -cp app.jar -jar app.jar \
              -H:CCompilerOption=-pipe \
              --allow-incomplete-classpath \
              --enable-url-protocols=http,https \
-             -H:ReflectionConfigurationFiles=reflection-config.json
+             -H:ReflectionConfigurationFiles=reflection-config.json \
+             --initialize-at-build-time=com.fasterxml.jackson,javax.xml.datatype,jdk.xml.internal.SecuritySupport
              # --initialize-at-run-time=org.httpkit.client.ClientSslEngineFactory$SSLHolder \
-             # --initialize-at-build-time=com.fasterxml.jackson,javax.xml.datatype,jdk.xml.internal.SecuritySupport
+
 
 
 chmod +x app
