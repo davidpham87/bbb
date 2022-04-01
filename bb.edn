@@ -1,88 +1,106 @@
-{:tasks {:init (def MAIN-NS "jetdotter.core")
+{:tasks
+ {:init (def MAIN-NS "jetdotter.core")
 
-         run (do
-               (require [(symbol MAIN-NS)])
-               (apply
-                (ns-resolve (find-ns (symbol MAIN-NS)) (symbol "-main"))
-                *command-line-args*))
+  run (do
+        (require [(symbol MAIN-NS)])
+        (apply
+         (ns-resolve (find-ns (symbol MAIN-NS)) (symbol "-main"))
+         *command-line-args*))
 
-         run-clj {:depends [ensure-bb-submodule]
-                  :task (deref (process (concat ["clj" "-m" MAIN-NS] *command-line-args*)
-                                        {:inherit true}))}
+  run-clj {:depends [ensure-bb-submodule]
+           :task (deref (process (concat ["clj" "-m" MAIN-NS] *command-line-args*)
+                                 {:inherit true}))}
 
-         build {:depends [ensure-bb-submodule ensure-graalvm
-                          uberjar-clj]
-                :task (shell {:extra-env EXTRA-ENV} (str "sh compile.sh"))}
+  build {:depends [ensure-bb-submodule ensure-graalvm
+                   uberjar-clj]
+         :task (shell {:extra-env EXTRA-ENV} (str "sh compile.sh"))}
 
-         native-image {:depends [build]}
+  native-image {:depends [build]}
 
-         ensure-bb-submodule (shell "git submodule update --init --recursive")
+  ensure-bb-submodule (shell "git submodule update --init --recursive")
 
-         ensure-graalvm {:task (when-not
-                                (->> "which native-image"
-                                     (shell {:continue true
-                                             :out nil :err nil
-                                             :extra-env EXTRA-ENV})
-                                     (:exit)
-                                     (= 0))
-                                 (babashka.tasks/run "install-graalvm"))}
+  ensure-graalvm {:task (when-not
+                            (->> "which native-image"
+                                 (shell {:continue true
+                                         :out nil :err nil
+                                         :extra-env EXTRA-ENV})
+                                 (:exit)
+                                 (= 0))
+                          (babashka.tasks/run "install-graalvm"))}
 
-         uberjar-bb (do (shell "mkdir -p classes/")
-                        (println "bbb: Compiling" MAIN-NS)
-                        (deref (process ["clj" "-e"
-                                         (str "(require '" MAIN-NS ")"
-                                              "(compile '" MAIN-NS ")")]))
-                        (println "bbb: Building uberjar to" (str MAIN-NS ".jar"))
-                        (deref (process ["bb" "-cp" (str (->> (shell {:out :string} "clojure -Spath")
-                                                              :out str/trim)
-                                                         ":classes")
-                                         "uberjar"
-                                         (str MAIN-NS ".jar") "-m" MAIN-NS])))
+  uberjar-bb (do (shell "mkdir -p classes/")
+                 (println "bbb: Compiling" MAIN-NS)
+                 (deref (process ["clj" "-e"
+                                  (str "(require '" MAIN-NS ")"
+                                       "(compile '" MAIN-NS ")")]))
+                 (println "bbb: Building uberjar to" (str MAIN-NS ".jar"))
+                 (deref (process ["bb" "-cp" (str (->> (shell {:out :string} "clojure -Spath")
+                                                       :out str/trim)
+                                                  ":classes")
+                                  "uberjar"
+                                  (str MAIN-NS ".jar") "-m" MAIN-NS])))
 
-         uberjar-clj
-         (do (deref (process
-                     ["clojure" "-X:uberjar" ":jar" "app.jar" ":main-class" MAIN-NS]
-                     {:inherit true})))
+  uberjar-clj
+  (do (deref (process
+              ["clojure" "-X:uberjar" ":jar" "app.jar" ":main-class" MAIN-NS]
+              {:inherit true})))
 
-         uberjar (do
-                   (println "bbb: Building a JVM Clojure uberjar, use uberjar-bb instead for a babashka uberjar")
-                   (babashka.tasks/run "uberjar-clj"))
+  uberjar (do
+            (println "bbb: Building a JVM Clojure uberjar, use uberjar-bb instead for a babashka uberjar")
+            (babashka.tasks/run "uberjar-clj"))
 
-         install-graalvm (bbb/install-graalvm-locally (str (fs/canonicalize "vendor/graalvm")))
+  install-graalvm (bbb/install-graalvm-locally (str (fs/canonicalize "vendor/graalvm")))
 
-         :enter (let [suffix (when (= (System/getProperty "os.name") "Mac OS X") "/Contents/Home")
-                      graalpath (str (fs/canonicalize (str "vendor/graalvm" suffix)))]
-                  (def LOCAL-GRAAL (when (-> (str graalpath "/bin/native-image") io/file .exists)
-                                     (-> graalpath fs/canonicalize str)))
-                  (def EXTRA-ENV
-                    (if LOCAL-GRAAL
-                      {"PATH" (str graalpath "/bin" ":" (System/getenv "PATH"))
-                       "GRAALVM_HOME" graalpath}
-                      {})))
+  :enter (let [suffix (when (= (System/getProperty "os.name") "Mac OS X") "/Contents/Home")
+               graalpath (str (fs/canonicalize (str "vendor/graalvm" suffix)))]
+           (def LOCAL-GRAAL (when (-> (str graalpath "/bin/native-image") io/file .exists)
+                              (-> graalpath fs/canonicalize str)))
+           (def EXTRA-ENV
+             (if LOCAL-GRAAL
+               {"PATH" (str graalpath "/bin" ":" (System/getenv "PATH"))
+                "GRAALVM_HOME" graalpath}
+               {})))
 
-         :requires [[babashka.process :refer [process]]
-                    [bbb.core :as bbb]
-                    [clojure.java.io :as io]
-                    [clojure.string :as str]
-                    [babashka.fs :as fs]]}
+  dr:run (shell (sp/render "docker run -dt --name {{name}}--rm {{image}} "
+                           {:image (first *command-line-args*)
+                            :name (second *command-line-args*)}))
 
- :aliases {:native-image
-           {:exec-args {:main-ns "example.core"} ;; example.core is a default, is overridden by MAIN-NS
-            :exec-fn bbb.dep-edn-alias/tools-deps-entrypoint
-            :jvm-opts ["-Dclojure.compiler.direct-linking=true"
-                       ;; ;; consider uncommenting the below options when building in docker or low mem envs
-                       ;; "-Dnative" "-Dnative-image.docker-build=true" "-Dnative-image.xmx=4g"
-                       "-Dclojure.spec.skip-macros=true"]
-            :extra-deps
-            {clj.native-image/clj.native-image
-             {:git/url "https://github.com/taylorwood/clj.native-image.git"
-              :sha "4604ae76855e09cdabc0a2ecc5a7de2cc5b775d6"}}}
+  dr:copy (shell (sp/render "docker cp {{name}}:/app.tar.bz2 ."
+                            {:name (first *command-line-args*)}))
 
-           :uberjar
-           {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
-            :exec-fn      hf.depstar/uberjar
-            :exec-args    {:jar "uber.jar"
-                           :aot true}}}
+  native:extract (shell "tar -xjf app.tar.bz2")
+
+  :requires [[babashka.process :refer [process]]
+             [selmer.parser :as sp]
+             [bbb.core :as bbb]
+             [clojure.java.io :as io]
+             [clojure.string :as str]
+             [babashka.fs :as fs]]}
+
+ :aliases
+ {:native-image
+  {:extra-paths ["native/src"]
+   :exec-args {:main-ns "example.core"} ;; example.core is a default, is overridden by MAIN-NS
+   :exec-fn bbb.dep-edn-alias/tools-deps-entrypoint
+   :jvm-opts ["-Dclojure.compiler.direct-linking=true"
+              ;; ;; consider uncommenting the below options when building in docker or low mem envs
+              ;; "-Dnative" "-Dnative-image.docker-build=true" "-Dnative-image.xmx=4g"
+              "-Dclojure.spec.skip-macros=true"]
+   :extra-deps
+   {org.clojars.huahaiy/datalevin-native {:mvn/version "0.6.5"}
+    clj.native-image/clj.native-image
+    {:git/url "https://github.com/taylorwood/clj.native-image.git"
+     :sha "4604ae76855e09cdabc0a2ecc5a7de2cc5b775d6"}}}
+  :jvm
+  {:extra-paths ["jvm/src"]
+   :extra-deps {datalevin/datalevin {:mvn/version "0.6.5"}}}
+
+  :uberjar
+  {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
+   :exec-fn      hf.depstar/uberjar
+   :exec-args    {:jar "uber.jar"
+                  :aot true}}}
+
  :paths ["src" "vendor"]
  :deps {borkdude/spartan.spec {:git/url "https://github.com/borkdude/spartan.spec"
                                :sha "12947185b4f8b8ff8ee3bc0f19c98dbde54d4c90"}
@@ -110,9 +128,11 @@
 
         ;; native imagexo
         com.github.clj-easy/graal-build-time {:mvn/version "0.1.4"}
+
         ;; added deps
         babashka/babashka {:local/root "vendor/babashka"}
 
         cli-matic/cli-matic {:git/url "https://github.com/l3nz/cli-matic.git"
                              :sha "1aa64070fec1556998b5bbb95d72f3513667ff6a"}
+
         http-kit/http-kit {:mvn/version "2.5.3"}}}

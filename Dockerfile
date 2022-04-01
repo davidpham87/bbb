@@ -1,29 +1,34 @@
-FROM docker.io/cimg/clojure:1.10.3 AS builder
+# FROM docker.io/cimg/clojure:1.10.3 AS builder
 
-USER circleci
+# USER circleci
 
-WORKDIR /home/circleci/project
+# WORKDIR /home/circleci/project
 
-COPY --chown=circleci:circleci deps.edn .
-COPY --chown=circleci:circleci src ./src
+# COPY --chown=circleci:circleci deps.edn .
+# COPY --chown=circleci:circleci src ./src
 
-# Compile into a uberjar
-RUN clojure -X:depstar
+# # Compile into a uberjar
+# RUN clojure -X:depstar
 
-FROM ghcr.io/graalvm/native-image:latest as native
+FROM ghcr.io/graalvm/native-image:21.3.0 as native
 
 USER root
 
 WORKDIR /usr/src/app
 
-COPY --from=builder /home/circleci/project/app.jar /usr/src/app/app.jar
+COPY app.jar /usr/src/app/app.jar
 
 COPY reflection-config.json .
 COPY compile.sh .
 
 RUN sh compile.sh
-RUN tar -cjvf app.tar.bz2 app # Compress the app
 
-FROM gcr.io/distroless/base
+FROM ubuntu as native-tar
+
+COPY --from=native /usr/src/app/app /
+
+RUN tar -cjvf app.tar.bz2 app
+
+FROM alpine
 
 COPY --from=native-tar /app.tar.bz2 /
