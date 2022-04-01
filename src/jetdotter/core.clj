@@ -1,14 +1,15 @@
 (ns jetdotter.core
   (:require
+   [babashka.fs :as fs]
    [bbb.core :refer [run-cmd]]
    [cheshire.core :as j]
    [clj-yaml.core :as yaml]
    [clojure.edn]
    [clojure.java.io :refer (input-stream)]
    [clojure.pprint]
+   [clojure.spec.alpha :as s]
    [clojure.string :as str]
    [cognitect.transit :as t]
-   [clojure.spec.alpha :as s]
    [expound.alpha :as expound])
   (:import java.io.ByteArrayOutputStream)
   (:gen-class))
@@ -21,16 +22,18 @@
 (defn extension [filename]
   (keyword (last (str/split filename #"\."))))
 
-(defn convert-extension [filename source target]
-  (let [filename-parts (str/split filename #"\.")
+(defn convert-extension [filename source target output-folder]
+  (let [parent (fs/parent filename)
+        filename-parts (str/split filename #"\.")
         new-ext (if  (= target :transit) :transit.json target)
         n-drop
         (if (and (= source :transit)
                  (= (last (butlast filename-parts)) "transit"))
-          2 1)]
-    (str
-     (str/join "." (drop-last n-drop filename-parts ))
-     "." (name new-ext))))
+          2 1)
+        new-filename (fs/file-name (str
+                                    (str/join "." (drop-last n-drop filename-parts ))
+                                    "." (name new-ext)))]
+    (str (or output-folder parent) (fs/file-separator) new-filename)))
 
 (defn parse
   ([s type]
@@ -62,7 +65,7 @@
 (defn -main
   [& args]
   (run-cmd args
-           {:command     "jettdotter"
+           {:command     "jetdotter"
             :description "Transform between JSON, EDN, YAML, and Transit"
             :version     "0.0.1"
             :opts        [{:as "Source Format. Only necessary for transit format."
@@ -81,6 +84,10 @@
                            :option "pretty"
                            :short "p"
                            :type :with-flag
+                           :default false}
+                          {:as "Output Folder"
+                           :option "output-folder"
+                           :type :string
                            :default false}]
             :runs
             (fn [opts]
@@ -89,7 +96,9 @@
               (doseq [filename (get opts :_arguments)]
                 (let [source-format (or (get-in opts [:from]) (extension filename))
                       target-format (get-in opts [:to])
-                      output-filename (convert-extension filename source-format target-format)]
+                      output-filename (convert-extension
+                                       filename source-format target-format
+                                       (get-in opts [:output-folder]))]
                   (println (format "Converting %s to %s" filename output-filename))
                   (-> (slurp filename)
                       (parse source-format)

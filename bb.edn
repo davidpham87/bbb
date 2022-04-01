@@ -61,7 +61,13 @@
                 "GRAALVM_HOME" graalpath}
                {})))
 
-  dr:run (shell (sp/render "docker run -dt --name {{name}}--rm {{image}} "
+  dr:build (do
+             (shell {:continue true} "mv app.jar docker/")
+             (shell {:dir "docker"}
+                      (sp/render "docker build --tag {{tag}} ."
+                                 {:tag (first *command-line-args*)})))
+
+  dr:run (shell (sp/render "docker run -dt --name {{name}} --rm {{image}} "
                            {:image (first *command-line-args*)
                             :name (second *command-line-args*)}))
 
